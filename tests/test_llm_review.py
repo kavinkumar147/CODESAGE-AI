@@ -226,3 +226,47 @@ def test_call_groq_exponential_backoff():
             assert res == "Mocked success response"
             assert len(calls) == 3
             assert mock_sleep.call_count == 2
+
+
+def test_chunk_diff_accounts_for_static_findings():
+    diff = (
+        "diff --git a/a.py b/a.py\n"
+        "--- a/a.py\n"
+        "+++ b/a.py\n"
+        "@@ -1 +1 @@\n"
+        "+x = 1\n"
+        "diff --git a/b.py b/b.py\n"
+        "--- a/b.py\n"
+        "+++ b/b.py\n"
+        "@@ -1 +1 @@\n"
+        "+y = 2\n"
+    )
+    
+    chunks_without = _chunk_diff(diff, [])
+    assert len(chunks_without) == 1
+    
+    findings = [
+        Finding(
+            file="a.py",
+            line=index,
+            tool="bandit",
+            rule=f"rule_{index}",
+            message="A very long message to bloat the formatted static findings size " * 10,
+            severity="error",
+        )
+        for index in range(40)
+    ] + [
+        Finding(
+            file="b.py",
+            line=index,
+            tool="bandit",
+            rule=f"rule_{index}",
+            message="A very long message to bloat the formatted static findings size " * 10,
+            severity="error",
+        )
+        for index in range(40)
+    ]
+    
+    with patch("app.llm_review.MAX_REQUEST_INPUT_BYTES", 2000):
+        chunks_with = _chunk_diff(diff, findings)
+        assert len(chunks_with) > 1

@@ -190,11 +190,14 @@ def _normalize_path(p: str) -> str:
     return p.replace("\\", "/").strip().strip('"').strip("'")
 
 
-def _chunk_diff(diff: str) -> list[str]:
+def _chunk_diff(diff: str, static_findings: list[Finding] = None) -> list[str]:
     """
     Split on file boundaries, then split oversized individual files.
     No diff content is discarded.
     """
+    if static_findings is None:
+        static_findings = []
+
     parts: list[tuple[str, str | None]] = []
     for section in _file_sections(diff):
         name = _file_name(section)
@@ -207,24 +210,27 @@ def _chunk_diff(diff: str) -> list[str]:
     chunks: list[str] = []
     current: list[str] = []
     current_files: set[str] = set()
-    current_size = 0
 
     for part, name in parts:
-        part_size = _utf8_size(part)
-        prospective_files = current_files | ({name} if name else set())
-        exceeds_size = current and current_size + part_size + 1 > MAX_DIFF_CHUNK_BYTES
-        exceeds_files = current and len(prospective_files) > MAX_FILES_PER_CHUNK
-
-        if exceeds_size or exceeds_files:
-            chunks.append("\n".join(current))
-            current = []
-            current_files = set()
-            current_size = 0
+        if current:
+            # Check prospective files count
+            prospective_files = current_files | ({name} if name else set())
+            exceeds_files = len(prospective_files) > MAX_FILES_PER_CHUNK
+            
+            # Check prospective size BEFORE appending new content
+            prospective_diff = "\n".join(current + [part])
+            prospective_size = _estimate_request_size(prospective_diff, static_findings)
+            exceeds_size = prospective_size > MAX_REQUEST_INPUT_BYTES
+            
+            if exceeds_size or exceeds_files:
+                # Finalize current chunk, start a new one
+                chunks.append("\n".join(current))
+                current = []
+                current_files = set()
 
         current.append(part)
         if name:
             current_files.add(name)
-        current_size += part_size + (1 if current_size else 0)
 
     if current:
         chunks.append("\n".join(current))
@@ -314,6 +320,23 @@ Chunk {chunk_number} of {chunk_count}. Review every shown change.
 {_format_static_findings(static_findings)}
 
 Return the JSON review now."""
+
+
+def _estimate_request_size(
+    diff_content: str,
+    static_findings: list[Finding],
+    chunk_number: int = 1,
+    chunk_count: int = 1,
+) -> int:
+    """Estimates the total byte count of the prompt payload sent to the LLM."""
+    relevant_findings = _findings_for_chunk(diff_content, static_findings)
+    user_prompt = _build_user_prompt(
+        diff_content,
+        relevant_findings,
+        chunk_number,
+        chunk_count,
+    )
+    return _utf8_size(SYSTEM_PROMPT) + _utf8_size(user_prompt)
 
 
 def _parse_response(raw_text: str) -> Optional[ReviewResult]:
@@ -521,7 +544,7 @@ def _merge_results(results: list[ReviewResult]) -> ReviewResult:
 
 
 def run_review(diff: str, static_findings: list[Finding]) -> ReviewResult:
-    chunks = _chunk_diff(diff)
+    chunks = _chunk_diff(diff, static_findings)
     logger.info(
         "Reviewing diff in %d bounded Groq request(s), max %d bytes each.",
         len(chunks),
