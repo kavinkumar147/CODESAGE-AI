@@ -34,11 +34,11 @@ logger = logging.getLogger("codesage.llm_review")
 VALID_SEVERITIES = {"critical", "suggestion", "praise"}
 
 # Adjusted limits to reduce requests while preserving review quality, keeping well within API limits
-MAX_REQUEST_INPUT_BYTES = 100_000
-MAX_DIFF_CHUNK_BYTES = 80_000
-MAX_STATIC_SUMMARY_BYTES = 15_000
+MAX_REQUEST_INPUT_BYTES = 7000
+MAX_DIFF_CHUNK_BYTES = 5000
+MAX_STATIC_SUMMARY_BYTES = 1200
 MAX_FILES_PER_CHUNK = 20
-MAX_RESPONSE_TOKENS = 1_800
+MAX_RESPONSE_TOKENS = 1800
 
 RETRY_SUFFIX = (
     "\n\nIMPORTANT: Your previous response was not valid JSON. "
