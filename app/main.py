@@ -85,6 +85,8 @@ async def handle_webhook(
 
     try:
         payload = json.loads(raw_body)
+        print("EVENT:", x_github_event)
+        print("ACTION:", payload.get("action"))
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Malformed JSON payload") from exc
 
@@ -99,6 +101,8 @@ async def handle_webhook(
     owner = (repository.get("owner") or {}).get("login")
     repo_name = repository.get("name")
     pr_number = pr.get("number")
+    print("PR NUMBER:", pr_number)
+    print("INSTALLATION:", installation_id)
     head_sha = (pr.get("head") or {}).get("sha")
     installation_id = installation.get("id")
 
