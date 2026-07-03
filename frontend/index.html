@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="CodeSage AI — an AI-powered GitHub code review dashboard."
+    />
+    <meta name="theme-color" content="#080b12" />
+    <title>CodeSage AI — Code Review Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="is-loading">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <div class="ambient ambient--one" aria-hidden="true"></div>
+    <div class="ambient ambient--two" aria-hidden="true"></div>
+
+    <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
+      <div class="loader">
+        <div class="loader__mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <p class="loader__eyebrow">CodeSage AI</p>
+        <h1>Reviewing the changes</h1>
+        <p class="loader__status" id="loader-status">Connecting to repository…</p>
+        <div class="loader__track" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <header class="site-header">
+        <a class="brand" href="#" aria-label="CodeSage AI dashboard home">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M11.5 12.5 4.5 20l7 7.5M28.5 12.5l7 7.5-7 7.5" />
+              <path d="m23 7-6 26" />
+              <circle cx="31" cy="9" r="2.5" />
+            </svg>
+          </span>
+          <span>
+            <span class="brand__name">CodeSage <em>AI</em></span>
+            <span class="brand__tagline">AI Powered GitHub Code Review</span>
+          </span>
+        </a>
+
+        <div class="header-actions">
+          <div class="service-status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="service-status-text">Connecting to backend</span>
+          </div>
+          <button class="icon-button" id="rerun-button" type="button" aria-label="Run analysis again" title="Run analysis again">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 6v5h-5M4 18v-5h5" />
+              <path d="M18.5 9a7 7 0 0 0-11.8-2.6L4 9m16 6-2.7 2.6A7 7 0 0 1 5.5 15" />
+            </svg>
+          </button>
+          <a class="avatar" href="#" aria-label="Open account menu">KS</a>
+        </div>
+      </header>
+
+      <main id="main-content">
+        <section class="hero" aria-labelledby="page-title">
+          <div>
+            <div class="eyebrow"><span></span> Pull request analysis</div>
+            <h1 id="page-title">Review intelligence,<br /><span>at a glance.</span></h1>
+            <p>Automated analysis and AI reasoning, distilled into one focused review.</p>
+          </div>
+          <a
+            class="github-button"
+            id="github-button"
+            href="https://github.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .7a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.2.8-.5v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.9 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.6.8.5A11.5 11.5 0 0 0 12 .7Z" />
+            </svg>
+            Open Pull Request
+            <svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 10h12m-4-4 4 4-4 4" />
+            </svg>
+          </a>
+        </section>
+
+        <section class="overview-grid" aria-label="Pull request overview">
+          <article class="metric-card metric-card--repo reveal" style="--delay: 0ms">
+            <div class="metric-card__icon metric-card__icon--violet">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 19.5V5.7A2.7 2.7 0 0 1 6.7 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5" />
+                <path d="M8 7h8M8 11h5" />
+              </svg>
+            </div>
+            <div>
+              <p class="metric-card__label">Repository</p>
+              <h2 id="repo-name">—</h2>
+            </div>
+            <span class="metric-card__meta" id="repo-meta">Latest</span>
+          </article>
+
+          <article class="metric-card reveal" style="--delay: 80ms">
+            <div class="metric-card__icon metric-card__icon--blue">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="6" cy="6" r="2.5" />
+                <circle cx="18" cy="18" r="2.5" />
+                <path d="M6 8.5v4a5.5 5.5 0 0 0 5.5 5.5h4" />
+                <path d="M14 4h4a2 2 0 0 1 2 2v5M16 8l4 4 4-4" />
+              </svg>
+            </div>
+            <div>
+              <p class="metric-card__label">Pull request</p>
+              <h2 id="pr-number">—</h2>
+            </div>
+            <span class="metric-card__meta" id="pr-meta">Waiting</span>
+          </article>
+
+          <article class="metric-card reveal" style="--delay: 160ms">
+            <div class="metric-card__icon metric-card__icon--green">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m5 12 4.5 4.5L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p class="metric-card__label">Review status</p>
+              <h2 class="text-green" id="review-status">Waiting for review</h2>
+            </div>
+            <span class="metric-card__meta metric-card__meta--green" id="review-status-meta">Idle</span>
+          </article>
+
+          <article class="metric-card reveal" style="--delay: 240ms">
+            <div class="metric-card__icon metric-card__icon--amber">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7 3h7l4 4v14H7z" />
+                <path d="M14 3v5h5M10 13h5M10 17h5" />
+              </svg>
+            </div>
+            <div>
+              <p class="metric-card__label">Files reviewed</p>
+              <h2><span id="files-reviewed">0</span> <small>/ <span id="files-total">0</span></small></h2>
+            </div>
+            <span class="metric-card__meta" id="files-percent">0%</span>
+          </article>
+        </section>
+
+        <div class="content-grid">
+          <div class="content-main">
+            <section class="panel summary-card reveal" style="--delay: 300ms" aria-labelledby="summary-title">
+              <div class="panel__header">
+                <div>
+                  <p class="section-kicker">AI synthesis</p>
+                  <h2 id="summary-title">Review summary</h2>
+                </div>
+                <span class="ai-badge">
+                  <span class="ai-badge__spark">✦</span> Generated by CodeSage
+                </span>
+              </div>
+              <div class="summary-copy" id="summary-copy">
+                <p>Waiting for the first completed pull request review.</p>
+              </div>
+              <div class="summary-footer">
+                <div class="confidence">
+                  <span id="confidence-label">Live sync</span>
+                  <div class="confidence__track" id="confidence-track" aria-label="Review data sync status">
+                    <span style="width: 0%"></span>
+                  </div>
+                  <strong id="confidence-value">Waiting</strong>
+                </div>
+                <span class="model-label">Groq AI</span>
+              </div>
+            </section>
+
+            <section class="panel findings-panel reveal" style="--delay: 380ms" aria-labelledby="findings-title">
+              <div class="panel__header findings-header">
+                <div>
+                  <p class="section-kicker">Detailed report</p>
+                  <h2 id="findings-title">Findings <span id="findings-count">0</span></h2>
+                </div>
+                <div class="filter-group" aria-label="Filter findings">
+                  <button class="filter is-active" type="button" data-filter="all">All</button>
+                  <button class="filter" type="button" data-filter="medium">Medium</button>
+                  <button class="filter" type="button" data-filter="low">Low</button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>File</th>
+                      <th>Line</th>
+                      <th>Issue</th>
+                      <th>Suggestion</th>
+                    </tr>
+                  </thead>
+                  <tbody id="findings-body"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="empty-state" hidden>No findings match this filter.</p>
+            </section>
+          </div>
+
+          <aside class="analysis-column" aria-label="Analysis metrics">
+            <div class="aside-heading reveal" style="--delay: 260ms">
+              <p class="section-kicker">Analysis</p>
+              <h2>Review signals</h2>
+            </div>
+
+            <article class="analysis-card reveal" style="--delay: 320ms">
+              <div class="analysis-card__top">
+                <span class="analysis-card__icon analysis-card__icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m9 5-6 7 6 7M15 5l6 7-6 7M13 3l-2 18" />
+                  </svg>
+                </span>
+                <span class="trend trend--good" id="static-trend">0 total</span>
+              </div>
+              <p>Static analysis</p>
+              <div class="analysis-card__value"><span id="static-total">0</span> <span>findings</span></div>
+              <div class="mini-bars" aria-hidden="true">
+                <i style="height: 0%"></i><i style="height: 0%"></i><i style="height: 0%"></i>
+                <i style="height: 0%"></i><i style="height: 0%"></i><i style="height: 0%"></i>
+                <i class="is-current" style="height: 8%"></i>
+              </div>
+            </article>
+
+            <article class="analysis-card reveal" style="--delay: 400ms">
+              <div class="analysis-card__top">
+                <span class="analysis-card__icon analysis-card__icon--violet">✦</span>
+                <span class="trend" id="ai-trend">0 total</span>
+              </div>
+              <p>AI findings</p>
+              <div class="analysis-card__value"><span id="ai-total">0</span> <span>insights</span></div>
+              <div class="distribution">
+                <span class="distribution__medium" id="distribution-medium" style="width: 0%"></span>
+                <span class="distribution__low" id="distribution-low" style="width: 0%"></span>
+                <span class="distribution__info" id="distribution-info" style="width: 100%"></span>
+              </div>
+              <div class="distribution-labels">
+                <span><i class="dot dot--medium"></i><span id="medium-label">0 critical</span></span>
+                <span><i class="dot dot--low"></i><span id="low-label">0 suggestions</span></span>
+              </div>
+            </article>
+
+            <article class="analysis-card review-time reveal" style="--delay: 480ms">
+              <div class="analysis-card__top">
+                <span class="analysis-card__icon analysis-card__icon--green">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                </span>
+                <span class="trend trend--good">Fast</span>
+              </div>
+              <p>Review time</p>
+              <div class="analysis-card__value" id="review-time">Waiting</div>
+              <div class="review-time__footer">
+                <span id="review-completed">No review yet</span>
+                <span id="review-updated">—</span>
+              </div>
+            </article>
+
+            <div class="coverage-note reveal" style="--delay: 540ms">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3 4 6.5v5.3c0 4.6 3.4 8.2 8 9.2 4.6-1 8-4.6 8-9.2V6.5z" />
+                <path d="m8.5 12 2.2 2.2 4.8-5" />
+              </svg>
+              <div><strong id="coverage-title">Waiting for review</strong><span id="coverage-details">0 files analyzed</span></div>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <footer>
+        <span>© 2026 CodeSage AI</span>
+        <span class="footer-center"><i></i><span id="footer-status">Waiting for analysis</span></span>
+        <nav aria-label="Footer navigation">
+          <a href="#">Documentation</a>
+          <a href="#">Privacy</a>
+        </nav>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -16,22 +16,26 @@ Run locally with:
     uvicorn app.main:app --reload --port 8000
 """
 from __future__ import annotations
-
 import hashlib
 import hmac
 import json
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.github_client import GitHubAPIError, GitHubAuthError, GitHubClient
 from app.pipeline import review_diff
+from app.state import latest_review
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("codesage.main")
 
 app = FastAPI(title="CodeSage AI", version="0.2.0")
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/dashboard", StaticFiles(directory=frontend_dir, html=True), name="dashboard")
 
 # Only these PR actions produce a meaningful new diff to review.
 SUPPORTED_ACTIONS = {"opened", "synchronize", "reopened"}
@@ -62,6 +66,11 @@ def verify_signature(payload_body: bytes, signature_header: str | None) -> bool:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/latest-review")
+def get_latest_review() -> dict:
+    return dict(latest_review)
 
 
 @app.post("/webhook")
@@ -102,7 +111,7 @@ async def handle_webhook(
     owner = (repository.get("owner") or {}).get("login")
     repo_name = repository.get("name")
     pr_number = pr.get("number")
-    print("PR NUMBER:", pr_number)
+    logger.info("Processing PR #%s", pr_number)
     head_sha = (pr.get("head") or {}).get("sha")
     installation_id = installation.get("id")
 
@@ -155,6 +164,27 @@ async def handle_webhook(
     #    review_diff() implementation under the hood.
     
     output = review_diff(diff=diff_text, changed_files=changed_files)
+
+    latest_review.update({
+        "repo": f"{owner}/{repo_name}",
+        "pr_number": pr_number,
+        "status": "Reviewed",
+        "files_reviewed": len(changed_files),
+        "static_findings": [
+            finding.to_dict() for finding in output.static_findings
+        ],
+        "ai_findings": [
+            {
+                "file": finding.file,
+                "line": finding.line,
+                "severity": finding.severity,
+                "issue": finding.issue,
+                "suggestion": finding.suggestion,
+            }
+            for finding in output.review.findings
+        ],
+        "summary": output.review.summary,
+    })
     
     # 5. Post the review comment back to GitHub.
     posted_to_github = False
@@ -180,7 +210,19 @@ async def handle_webhook(
         pr_number,
         comment_url,
     )
+        logger.info("Updating latest_review state...")
 
+        latest_review.update({
+            "repo": f"{owner}/{repo_name}",
+            "pr_number": pr_number,
+             "status": "Reviewed",
+            "files_reviewed": len(changed_files),
+            "static_findings": len(output.review.findings),
+            "ai_findings": len(output.review.findings),
+            "summary": output.review.summary,
+})
+
+        logger.info("latest_review = %s", latest_review)
     except GitHubAPIError as exc:
         post_error = str(exc)
         logger.exception("Failed to post review comment to GitHub")
