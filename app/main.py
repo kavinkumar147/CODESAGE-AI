@@ -103,9 +103,10 @@ async def handle_webhook(
     repo_name = repository.get("name")
     pr_number = pr.get("number")
     print("PR NUMBER:", pr_number)
-    print("INSTALLATION:", installation_id)
     head_sha = (pr.get("head") or {}).get("sha")
     installation_id = installation.get("id")
+
+    print("INSTALLATION:", installation_id)
 
     missing = [
         name
