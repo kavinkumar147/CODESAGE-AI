@@ -123,12 +123,14 @@ async def handle_webhook(
 
     # 3. Authenticate as the GitHub App installation and fetch PR data.
     try:
+        print("===== BEFORE GITHUB CLIENT =====")
         client = GitHubClient()
         installation_token = client.get_installation_token(installation_id)
         diff_text = client.fetch_pr_diff(owner, repo_name, pr_number, installation_token)
         changed_files = client.fetch_changed_files_content(
             owner, repo_name, pr_number, head_sha, installation_token
         )
+        print("===== AFTER FETCH =====")
     except (GitHubAuthError, GitHubAPIError) as exc:
         logger.exception("GitHub API interaction failed")
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -145,6 +147,7 @@ async def handle_webhook(
     # 4. Run the existing pipeline (static analysis + LLM review + formatting).
     #    This is unchanged from Stage 1 — still using your Groq-backed
     #    review_diff() implementation under the hood.
+    print("===== BEFORE REVIEW =====")
     output = review_diff(diff=diff_text, changed_files=changed_files)
     print("===== REVIEW FINISHED =====")
     # 5. Post the review comment back to GitHub.
@@ -153,7 +156,7 @@ async def handle_webhook(
     post_error = None
 
     try:
-        print("===== ABOUT TO POST COMMENT =====")
+        print("===== BEFORE POST COMMENT =====")
         comment = client.post_issue_comment(
             owner=owner,
             repo=repo_name,
