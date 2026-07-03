@@ -163,31 +163,15 @@ async def handle_webhook(
     #    This is unchanged from Stage 1 — still using your Groq-backed
     #    review_diff() implementation under the hood.
     logger.info("Starting review_diff...")
-    output = review_diff(...)
+
+    output = review_diff(
+    diff=diff_text,
+    changed_files=changed_files,
+    )
+
     logger.info("review_diff completed.")
-    output = review_diff(diff=diff_text, changed_files=changed_files)
-    logger.info("Updating latest_review...")
     
-    latest_review.update({
-        "repo": f"{owner}/{repo_name}",
-        "pr_number": pr_number,
-        "status": "Reviewed",
-        "files_reviewed": len(changed_files),
-        "static_findings": [
-            finding.to_dict() for finding in output.static_findings
-        ],
-        "ai_findings": [
-            {
-                "file": finding.file,
-                "line": finding.line,
-                "severity": finding.severity,
-                "issue": finding.issue,
-                "suggestion": finding.suggestion,
-            }
-            for finding in output.review.findings
-        ],
-        "summary": output.review.summary,
-    })
+   
     
     # 5. Post the review comment back to GitHub.
     posted_to_github = False
