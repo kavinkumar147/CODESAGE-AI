@@ -69,9 +69,7 @@ class GitHubClient:
             )
         self.app_id = settings.github_app_id
         self.private_key = settings.github_private_key.replace("\\n", "\n")
-        print("----- PRIVATE KEY DEBUG -----")
-        print(repr(self.private_key[:100]))
-        print("-----------------------------")
+
 
     # ------------------------------------------------------------------ #
     # Auth
