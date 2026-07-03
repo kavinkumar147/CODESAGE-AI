@@ -165,13 +165,11 @@ async def handle_webhook(
     logger.info("Starting review_diff...")
 
     output = review_diff(
-    diff=diff_text,
-    changed_files=changed_files,
+        diff=diff_text,
+        changed_files=changed_files,
     )
 
     logger.info("review_diff completed.")
-    
-   
     
     # 5. Post the review comment back to GitHub.
     posted_to_github = False
