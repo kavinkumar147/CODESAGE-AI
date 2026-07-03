@@ -145,18 +145,39 @@ async def handle_webhook(
     #    review_diff() implementation under the hood.
     output = review_diff(diff=diff_text, changed_files=changed_files)
 
-    logger.info(
-        "Review complete for PR #%s: %d findings (parse_failed=%s). "
-        "NOT posted to GitHub — Stage 2 returns results locally only.",
+    # 5. Post the review comment back to GitHub.
+    posted_to_github = False
+    comment_url = None
+    post_error = None
+
+    try:
+        comment = client.post_issue_comment(
+            owner=owner,
+            repo=repo_name,
+            pr_number=pr_number,
+            token=installation_token,
+            body=output.comment_markdown,
+        )
+
+        posted_to_github = True
+        comment_url = comment.get("html_url")
+
+        logger.info(
+        "Posted review comment to PR #%s: %s",
         pr_number,
-        len(output.review.findings),
-        output.review.parse_failed,
+        comment_url,
     )
+
+    except GitHubAPIError as exc:
+        post_error = str(exc)
+        logger.exception("Failed to post review comment to GitHub")
 
     # 5. Return the review locally. No comment is posted to GitHub in this stage.
     return {
         "status": "reviewed",
-        "posted_to_github": False,
+        "posted_to_github": posted_to_github,
+        "comment_url": comment_url,
+        "post_error": post_error,
         "repo": f"{owner}/{repo_name}",
         "pr_number": pr_number,
         "files_reviewed": list(changed_files.keys()),

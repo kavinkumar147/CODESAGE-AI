@@ -238,3 +238,43 @@ class GitHubClient:
             changed_files[filename] = content
 
         return changed_files
+    
+    def post_issue_comment(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+        token: str,
+        body: str,
+    ) -> dict:
+        """
+        Posts a single comment on a pull request.
+        """
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github+json",
+        }
+
+        url = f"{GITHUB_API}/repos/{owner}/{repo}/issues/{pr_number}/comments"
+
+        try:
+            resp = httpx.post(
+                url,
+                headers=headers,
+                json={"body": body},
+                timeout=HTTP_TIMEOUT,
+            )
+            resp.raise_for_status()
+
+        except httpx.HTTPStatusError as exc:
+            raise GitHubAPIError(
+                f"GitHub rejected the comment post "
+                f"(status {exc.response.status_code}): {exc.response.text}"
+            ) from exc
+
+        except httpx.HTTPError as exc:
+            raise GitHubAPIError(
+                f"Failed to post PR comment: {exc}"
+            ) from exc
+
+        return resp.json()
