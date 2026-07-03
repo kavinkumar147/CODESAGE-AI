@@ -162,9 +162,12 @@ async def handle_webhook(
     # 4. Run the existing pipeline (static analysis + LLM review + formatting).
     #    This is unchanged from Stage 1 — still using your Groq-backed
     #    review_diff() implementation under the hood.
-    
+    logger.info("Starting review_diff...")
+    output = review_diff(...)
+    logger.info("review_diff completed.")
     output = review_diff(diff=diff_text, changed_files=changed_files)
-
+    logger.info("Updating latest_review...")
+    
     latest_review.update({
         "repo": f"{owner}/{repo_name}",
         "pr_number": pr_number,
