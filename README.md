@@ -92,4 +92,4 @@ a real bot that reacts to PRs. That will use the `GITHUB_APP_ID`,
 from setting up the GitHub App.
 
 
-Testing Stage 2 webhook
+Testing Stage 3.1 webhook

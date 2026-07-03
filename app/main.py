@@ -144,13 +144,14 @@ async def handle_webhook(
     #    This is unchanged from Stage 1 — still using your Groq-backed
     #    review_diff() implementation under the hood.
     output = review_diff(diff=diff_text, changed_files=changed_files)
-
+    print("===== REVIEW FINISHED =====")
     # 5. Post the review comment back to GitHub.
     posted_to_github = False
     comment_url = None
     post_error = None
 
     try:
+        print("===== ABOUT TO POST COMMENT =====")
         comment = client.post_issue_comment(
             owner=owner,
             repo=repo_name,
@@ -158,6 +159,7 @@ async def handle_webhook(
             token=installation_token,
             body=output.comment_markdown,
         )
+        print("===== COMMENT POSTED =====")
 
         posted_to_github = True
         comment_url = comment.get("html_url")
