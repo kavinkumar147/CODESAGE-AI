@@ -10,11 +10,15 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import re
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
+import openai
 from openai import OpenAI
 
 from app.config import settings
@@ -29,13 +33,11 @@ logger = logging.getLogger("codesage.llm_review")
 
 VALID_SEVERITIES = {"critical", "suggestion", "praise"}
 
-# The total content sent in the system + user messages stays below this.
-# A further ~1,500-token margin remains below the requested 10,000-token cap
-# for chat-message framing and special tokens.
-MAX_REQUEST_INPUT_BYTES = 8_500
-MAX_DIFF_CHUNK_BYTES = 4_500
-MAX_STATIC_SUMMARY_BYTES = 900
-MAX_FILES_PER_CHUNK = 8
+# Adjusted limits to reduce requests while preserving review quality, keeping well within API limits
+MAX_REQUEST_INPUT_BYTES = 100_000
+MAX_DIFF_CHUNK_BYTES = 80_000
+MAX_STATIC_SUMMARY_BYTES = 15_000
+MAX_FILES_PER_CHUNK = 20
 MAX_RESPONSE_TOKENS = 1_800
 
 RETRY_SUFFIX = (
@@ -174,6 +176,20 @@ def _split_large_file_section(section: str) -> list[str]:
     return [f"{safe_header}{part}" for part in body_parts]
 
 
+def _is_skipped_file(filename: str) -> bool:
+    """Helper to detect if the file should be skipped from AI review."""
+    if not filename:
+        return False
+    clean_name = filename.strip().strip('"').strip("'")
+    base = Path(clean_name).name
+    return base in {"README.md", "requirements.txt", "LICENSE", ".gitignore"}
+
+
+def _normalize_path(p: str) -> str:
+    """Normalizes slashes for robust OS-independent path matching."""
+    return p.replace("\\", "/").strip().strip('"').strip("'")
+
+
 def _chunk_diff(diff: str) -> list[str]:
     """
     Split on file boundaries, then split oversized individual files.
@@ -182,6 +198,10 @@ def _chunk_diff(diff: str) -> list[str]:
     parts: list[tuple[str, str | None]] = []
     for section in _file_sections(diff):
         name = _file_name(section)
+        # Skip non-code files from AI review
+        if name and _is_skipped_file(name):
+            logger.info("Skipping file %s from AI review.", name)
+            continue
         parts.extend((part, name) for part in _split_large_file_section(section))
 
     chunks: list[str] = []
@@ -216,19 +236,31 @@ def _findings_for_chunk(
     static_findings: list[Finding],
 ) -> list[Finding]:
     names = {
-        name
+        _normalize_path(name)
         for section in _file_sections(chunk)
         if (name := _file_name(section))
     }
-    if not names:
-        return static_findings
-    return [finding for finding in static_findings if finding.file in names]
+    return [
+        finding
+        for finding in static_findings
+        if _normalize_path(finding.file) in names
+    ]
 
 
 def _format_static_findings(findings: list[Finding]) -> str:
     """Compact repeated linter output while retaining actionable examples."""
     if not findings:
         return "(no static analysis findings)"
+
+    # Limit static findings to at most 15 findings per file to keep the prompt clean.
+    file_counts: dict[str, int] = defaultdict(int)
+    filtered_findings = []
+    for finding in findings:
+        if file_counts[finding.file] < 15:
+            filtered_findings.append(finding)
+            file_counts[finding.file] += 1
+    
+    findings = filtered_findings
 
     grouped: dict[tuple[str, str, str, str], list[Finding]] = defaultdict(list)
     for finding in findings:
@@ -314,12 +346,74 @@ def _parse_response(raw_text: str) -> Optional[ReviewResult]:
     return ReviewResult(summary=summary, findings=findings)
 
 
+def _call_groq_with_backoff(
+    messages: list[dict[str, str]],
+    max_tokens: int,
+    chunk_number: int,
+    chunk_count: int,
+) -> str:
+    """
+    Calls Groq API with exponential backoff on HTTP 429 Rate Limit error.
+    """
+    base_delay = 2.0
+    max_delay = 60.0
+    max_retries = 5
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=settings.groq_model,
+                messages=messages,
+                temperature=0,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content
+        except openai.RateLimitError as exc:
+            if attempt == max_retries:
+                logger.error("Groq API rate limit exceeded (HTTP 429) for chunk %d/%d after %d retries.", chunk_number, chunk_count, max_retries)
+                raise exc
+            delay = min(base_delay * (2**attempt) + random.uniform(0, 1), max_delay)
+            logger.warning(
+                "Groq API HTTP 429 Rate Limit for chunk %d/%d. Retrying in %.2f seconds (attempt %d/%d)...",
+                chunk_number,
+                chunk_count,
+                delay,
+                attempt + 1,
+                max_retries,
+            )
+            time.sleep(delay)
+        except openai.APIStatusError as exc:
+            if exc.status_code == 429:
+                if attempt == max_retries:
+                    logger.error("Groq API rate limit exceeded (HTTP 429) for chunk %d/%d after %d retries.", chunk_number, chunk_count, max_retries)
+                    raise exc
+                delay = min(base_delay * (2**attempt) + random.uniform(0, 1), max_delay)
+                logger.warning(
+                    "Groq API HTTP 429 Rate Limit for chunk %d/%d. Retrying in %.2f seconds (attempt %d/%d)...",
+                    chunk_number,
+                    chunk_count,
+                    delay,
+                    attempt + 1,
+                    max_retries,
+                )
+                time.sleep(delay)
+            else:
+                raise exc
+
+
 def _review_chunk(
     diff: str,
     static_findings: list[Finding],
     chunk_number: int,
     chunk_count: int,
 ) -> ReviewResult:
+    if not diff.strip():
+        logger.info("Chunk %d/%d is empty/skipped — returning empty review result.", chunk_number, chunk_count)
+        return ReviewResult(
+            summary="No reviewable changes in this section.",
+            findings=[],
+        )
+
     user_prompt = _build_user_prompt(
         diff,
         static_findings,
@@ -342,16 +436,15 @@ def _review_chunk(
             break
 
         try:
-            response = client.chat.completions.create(
-                model=settings.groq_model,
+            raw_text = _call_groq_with_backoff(
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0,
                 max_tokens=MAX_RESPONSE_TOKENS,
+                chunk_number=chunk_number,
+                chunk_count=chunk_count,
             )
-            raw_text = response.choices[0].message.content
         except Exception:
             logger.exception(
                 "Groq API call failed for chunk %d/%d on attempt %d",
