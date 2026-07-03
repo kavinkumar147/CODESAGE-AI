@@ -71,10 +71,10 @@ async def handle_webhook(
     x_hub_signature_256: str | None = Header(default=None),
     x_github_event: str | None = Header(default=None),
 ) -> dict:
-    print("===== WEBHOOK ENTERED =====")
+    
     raw_body = await request.body()
 
-    print("EVENT:", x_github_event)   # <-- MOVE HERE
+    
     # 1. Verify signature BEFORE parsing/trusting anything in the payload.
     if not verify_signature(raw_body, x_hub_signature_256):
         logger.warning("Rejected webhook with invalid or missing signature.")
@@ -86,8 +86,8 @@ async def handle_webhook(
 
     try:
         payload = json.loads(raw_body)
-        print("EVENT:", x_github_event)
-        print("ACTION:", payload.get("action"))
+        
+        
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Malformed JSON payload") from exc
 
@@ -106,7 +106,7 @@ async def handle_webhook(
     head_sha = (pr.get("head") or {}).get("sha")
     installation_id = installation.get("id")
 
-    print("INSTALLATION:", installation_id)
+    
 
     missing = [
         name
@@ -129,14 +129,14 @@ async def handle_webhook(
 
     # 3. Authenticate as the GitHub App installation and fetch PR data.
     try:
-        print("===== BEFORE GITHUB CLIENT =====")
+        
         client = GitHubClient()
         installation_token = client.get_installation_token(installation_id)
         diff_text = client.fetch_pr_diff(owner, repo_name, pr_number, installation_token)
         changed_files = client.fetch_changed_files_content(
             owner, repo_name, pr_number, head_sha, installation_token
         )
-        print("===== AFTER FETCH =====")
+        
     except (GitHubAuthError, GitHubAPIError) as exc:
         logger.exception("GitHub API interaction failed")
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -153,16 +153,16 @@ async def handle_webhook(
     # 4. Run the existing pipeline (static analysis + LLM review + formatting).
     #    This is unchanged from Stage 1 — still using your Groq-backed
     #    review_diff() implementation under the hood.
-    print("===== BEFORE REVIEW =====")
+    
     output = review_diff(diff=diff_text, changed_files=changed_files)
-    print("===== REVIEW FINISHED =====")
+    
     # 5. Post the review comment back to GitHub.
     posted_to_github = False
     comment_url = None
     post_error = None
 
     try:
-        print("===== BEFORE POST COMMENT =====")
+        
         comment = client.post_issue_comment(
             owner=owner,
             repo=repo_name,
@@ -170,7 +170,7 @@ async def handle_webhook(
             token=installation_token,
             body=output.comment_markdown,
         )
-        print("===== COMMENT POSTED =====")
+        
 
         posted_to_github = True
         comment_url = comment.get("html_url")
