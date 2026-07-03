@@ -561,3 +561,5 @@ def run_review(diff: str, static_findings: list[Finding]) -> ReviewResult:
         for index, chunk in enumerate(chunks, start=1)
     ]
     return _merge_results(results)
+
+# demo test
