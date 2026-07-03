@@ -66,10 +66,12 @@ def health() -> dict:
 
 @app.post("/webhook")
 async def handle_webhook(
+    
     request: Request,
     x_hub_signature_256: str | None = Header(default=None),
     x_github_event: str | None = Header(default=None),
 ) -> dict:
+    print("===== WEBHOOK ENTERED =====")
     raw_body = await request.body()
 
     # 1. Verify signature BEFORE parsing/trusting anything in the payload.
