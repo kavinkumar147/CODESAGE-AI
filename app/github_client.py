@@ -276,3 +276,4 @@ class GitHubClient:
             ) from exc
 
         return resp.json()
+    # Placement demo
