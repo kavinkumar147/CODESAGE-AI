@@ -74,11 +74,12 @@ async def handle_webhook(
     print("===== WEBHOOK ENTERED =====")
     raw_body = await request.body()
 
+    print("EVENT:", x_github_event)   # <-- MOVE HERE
     # 1. Verify signature BEFORE parsing/trusting anything in the payload.
     if not verify_signature(raw_body, x_hub_signature_256):
         logger.warning("Rejected webhook with invalid or missing signature.")
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
-
+    
     # 2. Only handle pull_request events; acknowledge everything else politely.
     if x_github_event != "pull_request":
         return {"status": "ignored", "reason": f"unsupported event type: {x_github_event}"}
