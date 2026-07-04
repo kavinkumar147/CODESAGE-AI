@@ -1,95 +1,351 @@
-# CodeSage AI — Stage 1: Core Review Pipeline
+CODESAGE-AI:
 
-This is Stage 1 of the AI Code Review & Bug Detection Agent: the core
-pipeline (static analysis → LLM reasoning → Markdown formatting), fully
-testable locally with **no GitHub or deployment involved yet**.
+> AI-Powered GitHub Pull Request Review Assistant
 
-## What's included
+Automatically reviews GitHub Pull Requests using Static Analysis + AI reasoning and posts intelligent review comments directly on GitHub while providing a modern real-time dashboard.
+
+---
+
+# 🚀 Overview
+
+CodeSage AI is an AI-powered GitHub Pull Request Review Assistant designed to automate the first stage of code reviews.
+
+Whenever a developer opens or updates a Pull Request, CodeSage AI automatically:
+
+- Detects the Pull Request using GitHub Webhooks
+- Downloads the changed files
+- Performs Static Code Analysis
+- Sends the code changes to an AI model (Groq Llama)
+- Generates human-like review suggestions
+- Posts the review back to GitHub
+- Updates a live dashboard showing the latest review
+
+This reduces manual review effort and helps developers identify bugs, code smells, security issues, and improvement suggestions before human reviewers begin reviewing the code.
+
+---
+
+# ✨ Features
+
+## GitHub Integration
+
+- GitHub App Authentication
+- Secure Webhook Signature Verification
+- Pull Request Event Handling
+- Automatic PR Comment Posting
+
+---
+
+## AI Code Review
+
+- AI-powered review using Groq Llama
+- Human-like review suggestions
+- Bug Detection
+- Security Analysis
+- Code Quality Improvements
+- Best Practice Recommendations
+
+---
+
+## Static Analysis
+
+- Pylint
+- Bandit
+- ESLint
+- Automatic Severity Classification
+
+---
+
+## Dashboard
+
+- Modern Responsive UI
+- Latest Pull Request Information
+- Review Status
+- Files Reviewed
+- Static Analysis Findings
+- AI Review Summary
+- Live Backend Status
+
+---
+
+# 🏗 Project Architecture
 
 ```
-app/
-  config.py            # env var loading
-  static_analysis.py   # Pylint / Bandit / ESLint runners
-  llm_review.py         # Claude API call + strict JSON parsing
-  formatter.py           # JSON findings -> Markdown PR comment
-  pipeline.py             # ties it all together
-tests/
-  fixtures/
-    sample_pr.diff       # sample diff with intentional bugs
-    user_service.py       # full file content matching the diff
-  run_local_review.py     # manual smoke test — run this first
-  test_formatter.py        # unit tests, no API key needed
-  test_llm_review.py        # unit tests, no API key needed
-requirements.txt
-.env.example
+
+Developer
+│
+▼
+GitHub Pull Request
+
+│
+
+▼
+GitHub Webhook
+
+│
+
+▼
+FastAPI Backend
+
+├── Verify Signature
+├── GitHub App Authentication
+├── Download Changed Files
+├── Static Analysis
+├── AI Review (Groq)
+├── Format Review
+├── Post GitHub Comment
+└── Update Dashboard
+
+│
+
+▼
+
+Dashboard + GitHub Comment
+
 ```
 
-## Setup
+---
 
-1. Create a virtual environment and install dependencies:
+# 📁 Project Structure
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+```
 
-2. For JS/TS linting support, ESLint needs to be available via `npx`.
-   If you're only testing with the Python fixture, you can skip this for now:
+CodeSage-AI/
+│
+├── app/
+│ ├── main.py
+│ ├── github_client.py
+│ ├── pipeline.py
+│ ├── static_analysis.py
+│ ├── llm_review.py
+│ ├── formatter.py
+│ ├── state.py
+│ └── config.py
+│
+├── frontend/
+│ ├── index.html
+│ ├── style.css
+│ └── script.js
+│
+├── tests/
+│
+├── requirements.txt
+├── README.md
+├── .env.example
+└── test_groq.py
 
-   ```bash
-   npm install eslint --save-dev
-   ```
+```
 
-3. Copy the env template and add your Anthropic API key:
+---
 
-   ```bash
-   cp .env.example .env
-   # then edit .env and set ANTHROPIC_API_KEY
-   ```
+# ⚙ Tech Stack
 
-## Run the smoke test
+## Backend
 
-This runs the full pipeline against a sample diff containing an intentional
-SQL injection, a hardcoded password, and a couple of logic issues — a good
-way to confirm the LLM reasoning + static analysis + formatting are all
-working together before wiring up GitHub.
+- Python
+- FastAPI
+- Uvicorn
+
+## AI
+
+- Groq API
+- Llama Model
+
+## Static Analysis
+
+- Pylint
+- Bandit
+- ESLint
+
+## GitHub
+
+- GitHub Apps
+- GitHub Webhooks
+- GitHub REST API
+
+## Frontend
+
+- HTML
+- CSS
+- JavaScript
+
+## Deployment
+
+- Render
+
+---
+
+# 🔄 Workflow
+
+1. Developer creates a Pull Request.
+
+2. GitHub sends a Webhook.
+
+3. FastAPI receives the request.
+
+4. Webhook signature is verified.
+
+5. GitHub App generates an Installation Token.
+
+6. Changed files are downloaded.
+
+7. Static Analysis runs.
+
+8. AI reviews the code.
+
+9. Markdown review is generated.
+
+10. Review is posted back to GitHub.
+
+11. Dashboard updates automatically.
+
+---
+
+# 🚀 Installation
+
+## Clone the Repository
 
 ```bash
-python -m tests.run_local_review
+git clone https://github.com/<your-username>/CODESAGE-AI.git
+
+cd CODESAGE-AI
 ```
 
-You should see:
-- Pylint/Bandit findings printed (static analysis working)
-- A structured summary + findings list (LLM reasoning working)
-- A rendered Markdown comment at the bottom (formatting working) —
-  it should flag the SQL injection and hardcoded password as **Critical**.
-
-## Run unit tests
-
-These don't require an API key or network access — they test JSON parsing
-and Markdown formatting in isolation:
+## Create Virtual Environment
 
 ```bash
-pytest tests/test_formatter.py tests/test_llm_review.py -v
+python -m venv .venv
 ```
 
-## What "done" looks like for Stage 1
+Windows
 
-- [ ] `python -m tests.run_local_review` runs without errors
-- [ ] The rendered comment correctly flags the SQL injection as Critical
-- [ ] The rendered comment correctly flags the hardcoded password as Critical
-- [ ] `pytest` unit tests pass
-- [ ] You've read through `app/llm_review.py`'s `SYSTEM_PROMPT` and tweaked
-      the rubric if you want a different review style/tone
+```bash
+.venv\Scripts\activate
+```
 
-## Next: Stage 2
+Linux / macOS
 
-Once Stage 1 works locally, Stage 2 adds the FastAPI webhook server, GitHub
-App authentication, diff fetching, and comment posting — turning this into
-a real bot that reacts to PRs. That will use the `GITHUB_APP_ID`,
-`GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` values you already have
-from setting up the GitHub App.
+```bash
+source .venv/bin/activate
+```
 
+---
 
-Final demo test
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Configure Environment Variables
+
+Create a `.env` file.
+
+Example:
+
+```text
+GITHUB_APP_ID=
+
+GITHUB_PRIVATE_KEY=
+
+GITHUB_WEBHOOK_SECRET=
+
+GROQ_API_KEY=
+```
+
+---
+
+## Run the Backend
+
+```bash
+uvicorn app.main:app --reload
+```
+
+---
+
+## Open Dashboard
+
+```
+http://127.0.0.1:8000/dashboard/
+```
+
+---
+
+# 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | /health | Health Check |
+| POST | /webhook | GitHub Webhook |
+| GET | /api/latest-review | Latest Review Data |
+| GET | /dashboard/ | Dashboard |
+
+---
+
+# 📸 Demo
+
+## Dashboard
+
+(Add Screenshot)
+
+---
+
+## GitHub Pull Request
+
+(Add Screenshot)
+
+---
+
+## AI Review Comment
+
+(Add Screenshot)
+
+---
+
+# ✅ Example Workflow
+
+Developer pushes code
+
+↓
+
+Creates Pull Request
+
+↓
+
+GitHub sends Webhook
+
+↓
+
+CodeSage AI reviews the code
+
+↓
+
+Review is posted automatically
+
+↓
+
+Dashboard displays latest review
+
+---
+
+# 🚀 Future Improvements
+
+- Multi-Repository Support
+- Team Dashboard
+- Slack Integration
+- Microsoft Teams Integration
+- Email Notifications
+- Historical Analytics
+- Auto Review Approval
+- Multi-LLM Support
+
+---
+
+Author:
+
+**KAVINKUMAR G**
+
+AI & Data Science Engineer
+
+GitHub: https://github.com/kavinkumar147
