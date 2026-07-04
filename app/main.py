@@ -139,7 +139,7 @@ async def handle_webhook(
     # 3. Authenticate as the GitHub App installation and fetch PR data.
     try:
         
-        client = GitHubclient()
+        client = GitHubClient()
         installation_token = client.get_installation_token(installation_id)
         diff_text = client.fetch_pr_diff(owner, repo_name, pr_number, installation_token)
         changed_files = client.fetch_changed_files_content(
