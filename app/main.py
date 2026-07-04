@@ -177,6 +177,7 @@ async def handle_webhook(
     post_error = None
 
     try:
+        logger.info("About to post GitHub comment")
         comment = client.post_issue_comment(
             owner=owner,
             repo=repo_name,
@@ -218,7 +219,7 @@ async def handle_webhook(
 ],
             "summary": output.review.summary,
 })
-
+        logger.info("latest_review updated successfully")
         logger.info("latest_review = %s", latest_review)
         
         return {
