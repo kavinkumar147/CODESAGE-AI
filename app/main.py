@@ -202,8 +202,20 @@ async def handle_webhook(
             "pr_number": pr_number,
             "status": "Reviewed",
             "files_reviewed": len(changed_files),
-            "static_findings": [],
-            "ai_findings": [],
+            "static_findings": [
+    finding.to_dict()
+    for finding in output.static_findings
+],
+           "ai_findings": [
+    {
+        "file": finding.file,
+        "line": finding.line,
+        "severity": finding.severity,
+        "issue": finding.issue,
+        "suggestion": finding.suggestion,
+    }
+    for finding in output.review.findings
+],
             "summary": output.review.summary,
 })
 
@@ -219,4 +231,4 @@ async def handle_webhook(
         logger.exception("GitHub API error")
         raise HTTPException(status_code=500, detail=str(exc))
         
-##Test webhook again
+##Test webhook
