@@ -197,12 +197,18 @@ async def handle_webhook(
         logger.info("Updating latest_review state...")
 
         latest_review.update({
-        ...
-    })
+            "repo": f"{owner}/{repo_name}",
+            "pr_number": pr_number,
+            "status": "Reviewed",
+            "files_reviewed": len(changed_files),
+            "static_findings": [],
+            "ai_findings": [],
+            "summary": output.review.summary,
+})
 
         logger.info("latest_review = %s", latest_review)
 
     except GitHubAPIError as exc:
         ...
         
-##Test webhook againooooo
+##Test webhook again
