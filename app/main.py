@@ -139,7 +139,7 @@ async def handle_webhook(
     # 3. Authenticate as the GitHub App installation and fetch PR data.
     try:
         
-        client = GitHubClient()
+        client = GitHubclient()
         installation_token = client.get_installation_token(installation_id)
         diff_text = client.fetch_pr_diff(owner, repo_name, pr_number, installation_token)
         changed_files = client.fetch_changed_files_content(
@@ -177,7 +177,6 @@ async def handle_webhook(
     post_error = None
 
     try:
-        
         comment = client.post_issue_comment(
             owner=owner,
             repo=repo_name,
@@ -185,52 +184,25 @@ async def handle_webhook(
             token=installation_token,
             body=output.comment_markdown,
         )
-        
 
         posted_to_github = True
         comment_url = comment.get("html_url")
 
         logger.info(
-        "Posted review comment to PR #%s: %s",
-        pr_number,
-        comment_url,
-    )
+            "Posted review comment to PR #%s: %s",
+            pr_number,
+            comment_url,
+        )
+
         logger.info("Updating latest_review state...")
 
         latest_review.update({
-            "repo": f"{owner}/{repo_name}",
-            "pr_number": pr_number,
-             "status": "Reviewed",
-            "files_reviewed": len(changed_files),
-            "static_findings": len(output.review.findings),
-            "ai_findings": len(output.review.findings),
-            "summary": output.review.summary,
-})
+        ...
+    })
 
         logger.info("latest_review = %s", latest_review)
-    except GitHubAPIError as exc:
-        post_error = str(exc)
-        logger.exception("Failed to post review comment to GitHub")
 
-    # 5. Return the review locally. No comment is posted to GitHub in this stage.
-    return {
-        "status": "reviewed",
-        "posted_to_github": posted_to_github,
-        "comment_url": comment_url,
-        "post_error": post_error,
-        "repo": f"{owner}/{repo_name}",
-        "pr_number": pr_number,
-        "files_reviewed": list(changed_files.keys()),
-        "summary": output.review.summary,
-        "findings": [
-            {
-                "file": f.file,
-                "line": f.line,
-                "severity": f.severity,
-                "issue": f.issue,
-                "suggestion": f.suggestion,
-            }
-            for f in output.review.findings
-        ],
-        "comment_markdown": output.comment_markdown,
-    }
+    except GitHubAPIError as exc:
+        ...
+        
+# test
