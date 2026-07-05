@@ -194,8 +194,7 @@ async def handle_webhook(
             comment_url,
         )
 
-        logger.info("Updating latest_review state...")
-        
+        latest_review.clear()
 
         latest_review.update({
             "repo": f"{owner}/{repo_name}",
@@ -203,33 +202,34 @@ async def handle_webhook(
             "status": "Reviewed",
             "files_reviewed": len(changed_files),
             "static_findings": [
-    finding.to_dict()
-    for finding in output.static_findings
-],
-           "ai_findings": [
-    {
-        "file": finding.file,
-        "line": finding.line,
-        "severity": finding.severity,
-        "issue": finding.issue,
-        "suggestion": finding.suggestion,
-    }
-    for finding in output.review.findings
-],
+                finding.to_dict()
+                for finding in output.static_findings
+            ],
+            "ai_findings": [
+                {
+                    "file": f.file,
+                    "line": f.line,
+                    "severity": f.severity,
+                    "issue": f.issue,
+                    "suggestion": f.suggestion,
+                }
+                for f in output.review.findings
+            ],
             "summary": output.review.summary,
-})
+        })
 
-        logger.info("latest_review = %s", latest_review)
-        
+        logger.info("LATEST REVIEW UPDATED")
+        logger.info(latest_review)
+
         return {
             "status": "reviewed",
             "repo": f"{owner}/{repo_name}",
             "pr_number": pr_number,
-}
+            "comment_url": comment_url,
+        }
 
-    except GitHubAPIError as exc:
-        logger.exception("GitHub API error")
+    except Exception as exc:
+        logger.exception("WEBHOOK FAILED")
         raise HTTPException(status_code=500, detail=str(exc))
-        
-#Testing Render deployment 1
-##haii this is mr gowri shankar
+
+        testing
