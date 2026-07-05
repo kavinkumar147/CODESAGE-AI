@@ -287,21 +287,15 @@ http://127.0.0.1:8000/dashboard/
 
 ## Dashboard
 
-(Add Screenshot)
-
----
-
-## GitHub Pull Request
-
-(Add Screenshot)
+<img width="1920" height="1080" alt="Screenshot 2026-07-04 213224" src="https://github.com/user-attachments/assets/b1b32738-653d-443e-9f73-dc4b49e6e91c" />
 
 ---
 
 ## AI Review Comment
 
-(Add Screenshot)
+<img width="962" height="1072" alt="Screenshot 2026-07-03 234607" src="https://github.com/user-attachments/assets/c854d2bd-46f5-4e7e-82a1-175171383b9d" />
 
----
+
 
 # ✅ Example Workflow
 
